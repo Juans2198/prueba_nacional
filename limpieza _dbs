@@ -1,0 +1,316 @@
+import numpy as np
+import pandas as pd
+import re
+
+"""
+Cargando la información de los años 2000 al 2013, se va  a dejar la misma estructura
+de datos que los dfs de los años 2014 a 2021 con 39 columnas.
+"""
+
+#Se inicializa y carga una lista con los indices necesarios para traer las columnas
+#de estudiantes inscritos por año sin tener en cuenta las columnas de totales por
+#año, pues no serán necesarias para el análisis.
+
+usecols1=[]
+c=0
+for i in range(21,105):
+    c+=1
+    if c%3!=0:
+        usecols1.append(i)
+
+#Se carga un df "i_2013" con solo las columnas base que se homologan con 
+#los dfs de los años 2014 a 2021, asegurandonos de que tengan los mismos nombres
+#exactos (cabe destacar que para este paso se tranformó manualmente el archivo
+#de origen de .xlsb a .xlsx para facilidad de importación).   
+    
+i_2013=pd.read_excel('2013.xlsx',header=6,
+names=['CÓDIGO DE LA INSTITUCIÓN',
+'IES_PADRE','INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)','PRINCIPAL O SECCIONAL',
+'SECTOR IES','CARACTER IES','CÓDIGO DEL DEPARTAMENTO (IES)',
+'DEPARTAMENTO DE DOMICILIO DE LA IES','CÓDIGO DEL MUNICIPIO (IES)',
+'MUNICIPIO DE DOMICILIO DE LA IES','CÓDIGO SNIES DEL PROGRAMA',
+'PROGRAMA ACADÉMICO','NIVEL DE FORMACIÓN','NIVEL ACADÉMICO','METODOLOGÍA',
+'ÁREA DE CONOCIMIENTO','NÚCLEO BÁSICO DEL CONOCIMIENTO (NBC)',
+'CÓDIGO DEL DEPARTAMENTO (PROGRAMA)','DEPARTAMENTO DE OFERTA DEL PROGRAMA',
+'CÓDIGO DEL MUNICIPIO (PROGRAMA)','MUNICIPIO DE OFERTA DEL PROGRAMA']
+,usecols=range(21))
+    
+#Se agregan columnas vácias para la información que no viene en el archivo de 
+#Excel de origen, esto con el fin de que se conserve la misma estructura de datos que
+#para los archivos de los años 2014 a 2021.
+
+i_2013['ID SECTOR']=''
+i_2013['ID CARACTER']=''
+i_2013['ID NIVEL ACADÉMICO']=''
+i_2013['ID NIVEL DE FORMACIÓN']=''
+i_2013['ID METODOLOGÍA']=''
+i_2013['ID ÁREA']=''
+i_2013['ID NÚCLEO']=''
+i_2013['ID CINE CAMPO AMPLIO']=''
+i_2013['DESC CINE CAMPO AMPLIO']=''
+i_2013['ID CINE CAMPO ESPECIFICO']=''
+i_2013['DESC CINE CAMPO ESPECIFICO']=''
+i_2013['ID CINE CODIGO DETALLADO']=''
+i_2013['DESC CINE CODIGO DETALLADO']=''  
+ 
+#con esto se finaliza la creación de un df estándar con la información base que no
+#se repite dentro del df, ahora será necesario cargar la información faltante y
+#necesaria para cada año para obtener la misma estructura que los años 2014 a 
+#2021. Estas son las columnas "SEXO","INSCRITOS","SEMESTRE","AÑO" e "ID SEXO".
+
+#Se crea un df "i_2013" base concatenandolo 4 veces a si mismo, esto porque para cada año,
+#será necesario tener la información repetida 4 veces, para cada combianción de 
+# semestre y sexo, para un total de 4 combinaciones.
+i_2013=pd.concat([i_2013]*4,ignore_index=True)
+
+#Se carga la parte de la informacion que contiene a los inscritos por sexo, año y
+#semestre en un df "i_2013_2" sin incluir las columnas que totalizan por año.
+i_2013_2=pd.read_excel('2013.xlsx',header=6,
+names=['Hombre 2000-1','Mujer 2000-1','Hombre 2000-2','Mujer 2000-2','Hombre 2001-1',
+'Mujer 2001-1','Hombre 2001-2','Mujer 2001-2','Hombre 2002-1','Mujer 2002-1',
+'Hombre 2002-2','Mujer 2002-2','Hombre 2003-1','Mujer 2003-1','Hombre 2003-2',
+'Mujer 2003-2','Hombre 2004-1','Mujer 2004-1','Hombre 2004-2','Mujer 2004-2',
+'Hombre 2005-1','Mujer 2005-1','Hombre 2005-2','Mujer 2005-2','Hombre 2006-1',
+'Mujer 2006-1','Hombre 2006-2','Mujer 2006-2','Hombre 2007-1','Mujer 2007-1',
+'Hombre 2007-2','Mujer 2007-2','Hombre 2008-1','Mujer 2008-1','Hombre 2008-2',
+'Mujer 2008-2','Hombre 2009-1','Mujer 2009-1','Hombre 2009-2','Mujer 2009-2',
+'Hombre 2010-1','Mujer 2010-1','Hombre 2010-2','Mujer 2010-2','Hombre 2011-1',
+'Mujer 2011-1','Hombre 2011-2','Mujer 2011-2','Hombre 2012-1','Mujer 2012-1',
+'Hombre 2012-2','Mujer 2012-2','Hombre 2013-1','Mujer 2013-1','Hombre 2013-2',
+'Mujer 2013-2'],usecols=usecols1)
+
+#Se inicializa una lista vácia en la que se cargarán, los dfs resultantes para cada 
+# año del 2000 al 2013.
+
+dfs=[]
+
+#Se hace un doble recorrido por cada columna de i_2013_2 para extraer la información 
+#requerida para cada año y se genera un df "df1" por cada año,semestre y sexo,
+#estos df se almacenan en una lista "l1", la cual se concatena en cada recorrido
+#exterior para generar el df "df1" final cada uno por año, cada df por año se le
+#aplica un merge para unirlo a "i_2013" por su indice creando un df "dff", 
+#pues se conserva el orden. 
+#Finalmente, se hace una carga una lista "dfs" la cual contiene los dfs de cada
+#año con la información requerida
+
+for i in range(2000,2014):
+    l1=[]
+    for column in i_2013_2:
+        if str(i) in column:
+            df1=pd.DataFrame(i_2013_2[column])
+            df1.columns=['INSCRITOS']    
+            df1['SEXO']=re.search(r'^\w*',column).group(0)
+            df1['ID SEXO'] =np.where(df1['SEXO']=='Hombre',1,2)
+            df1['AÑO']=re.search('\s\w*',column).group(0).strip() 
+            df1['SEMESTRE']=re.search('\d$',column).group(0)  
+            l1.append(df1)
+    df1=pd.concat(l1,ignore_index=True)
+    dff=pd.merge(i_2013,df1,right_index=True,left_index=True)
+    dfs.append(dff)
+   
+#Se concatenan los dfs de cada año del 2000 al 2013 en un solo df "dff"
+#asimismo, ordenas de forma descendente el df, nos aseguramos que todos los
+#núemros sean int reemplazando los valores de cada numero en str para int,
+#filtramos el df para eliminar todos los valores cuyos isncritos sean 0, 
+#para reducir el tamaño del df y eliminar información que solo genera ruido,
+#convertimos todos los valores a 
+
+dff=pd.concat(dfs)
+df1=dff.sort_values('AÑO',ascending=False)
+df1=df1.apply(lambda x: x.astype(str).str.upper().str.strip())
+df1[['INSCRITOS','CÓDIGO DE LA INSTITUCIÓN','AÑO','ID SEXO','IES_PADRE',
+     'CÓDIGO DEL DEPARTAMENTO (IES)','CÓDIGO DEL MUNICIPIO (IES)',
+     'CÓDIGO SNIES DEL PROGRAMA','SEMESTRE']]=df1[
+    ['INSCRITOS','CÓDIGO DE LA INSTITUCIÓN','AÑO','ID SEXO','IES_PADRE',
+     'CÓDIGO DEL DEPARTAMENTO (IES)','CÓDIGO DEL MUNICIPIO (IES)',
+     'CÓDIGO SNIES DEL PROGRAMA','SEMESTRE']].astype(int)
+df1=df1.replace(regex=['Á','É','Í','Ó','Ú'],
+                value=['A','E','I','O','U'])
+df1=df1[df1['INSCRITOS']!=0]
+df1=df1.sort_values('AÑO',ascending=False)
+
+
+"""
+Cargando la informacion del 2014 al 2021
+"""
+
+#Inicializando lista vácia para cargarla con los multiples dfs de los distintos años
+l=[]
+
+#Se recorren los multiples archivos y se guardan en dfs y se almacenan en la lista "l"
+for i in range(2014,2022):
+    if (i>=2014 and i<=2018):
+        if i==2018:
+            h=8
+        else:
+            h=6
+        usecols=range(33)
+        names=['CÓDIGO DE LA INSTITUCIÓN',
+'IES_PADRE','INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)','PRINCIPAL O SECCIONAL',
+'ID SECTOR','SECTOR IES','ID CARACTER','CARACTER IES',
+'CÓDIGO DEL DEPARTAMENTO (IES)','DEPARTAMENTO DE DOMICILIO DE LA IES',
+'CÓDIGO DEL MUNICIPIO (IES)','MUNICIPIO DE DOMICILIO DE LA IES',
+'CÓDIGO SNIES DEL PROGRAMA','PROGRAMA ACADÉMICO','ID NIVEL ACADÉMICO',
+'NIVEL ACADÉMICO','ID NIVEL DE FORMACIÓN','NIVEL DE FORMACIÓN','ID METODOLOGÍA',
+'METODOLOGÍA','ID ÁREA','ÁREA DE CONOCIMIENTO','ID NÚCLEO',
+'NÚCLEO BÁSICO DEL CONOCIMIENTO (NBC)','CÓDIGO DEL DEPARTAMENTO (PROGRAMA)',
+'DEPARTAMENTO DE OFERTA DEL PROGRAMA','CÓDIGO DEL MUNICIPIO (PROGRAMA)',
+'MUNICIPIO DE OFERTA DEL PROGRAMA','ID SEXO','SEXO','AÑO','SEMESTRE','INSCRITOS']
+    else:
+        if i==2021:
+            h=10
+        else:
+            h=9
+        usecols=range(39)
+        names=['CÓDIGO DE LA INSTITUCIÓN',
+'IES_PADRE','INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)',
+'PRINCIPAL O SECCIONAL','ID SECTOR','SECTOR IES','ID CARACTER','CARACTER IES',
+'CÓDIGO DEL DEPARTAMENTO (IES)','DEPARTAMENTO DE DOMICILIO DE LA IES',
+'CÓDIGO DEL MUNICIPIO (IES)','MUNICIPIO DE DOMICILIO DE LA IES',
+'CÓDIGO SNIES DEL PROGRAMA','PROGRAMA ACADÉMICO','ID NIVEL ACADÉMICO',
+'NIVEL ACADÉMICO','ID NIVEL DE FORMACIÓN','NIVEL DE FORMACIÓN','ID METODOLOGÍA'
+,'METODOLOGÍA','ID ÁREA','ÁREA DE CONOCIMIENTO','ID NÚCLEO',
+'NÚCLEO BÁSICO DEL CONOCIMIENTO (NBC)','ID CINE CAMPO AMPLIO',
+'DESC CINE CAMPO AMPLIO','ID CINE CAMPO ESPECIFICO','DESC CINE CAMPO ESPECIFICO',
+'ID CINE CODIGO DETALLADO','DESC CINE CODIGO DETALLADO',
+'CÓDIGO DEL DEPARTAMENTO (PROGRAMA)','DEPARTAMENTO DE OFERTA DEL PROGRAMA',
+'CÓDIGO DEL MUNICIPIO (PROGRAMA)','MUNICIPIO DE OFERTA DEL PROGRAMA',
+'ID SEXO','SEXO','AÑO','SEMESTRE','INSCRITOS']
+        
+    df2=pd.read_excel(str(i)+'.xlsx',header=h,names=names,usecols=usecols)    
+        
+    if (i>=2014 and i<=2018):
+        df2['ID CINE CAMPO AMPLIO']=''
+        df2['DESC CINE CAMPO AMPLIO']=''
+        df2['ID CINE CAMPO ESPECIFICO']=''
+        df2['DESC CINE CAMPO ESPECIFICO']=''
+        df2['ID CINE CODIGO DETALLADO']=''
+        df2['DESC CINE CODIGO DETALLADO']=''
+        
+    #Se agregan los distintos dfs a la lista "l" 
+    l.append(df2)
+
+#Se crea el df completo con la información de los múltiples años y se ordena
+#de forma descendente por año.    
+
+
+df2=pd.concat(l,ignore_index=True)
+df2=df2.apply(lambda x: x.astype(str).str.upper().str.strip())
+df2=df2.sort_values('AÑO',ascending=False)
+df2=df2.replace(regex=['Á','É','Í','Ó','Ú'],
+                value=['A','E','I','O','U'])
+df2[['INSCRITOS','ID SECTOR','ID CARACTER','CÓDIGO DE LA INSTITUCIÓN'
+     ,'AÑO','ID SEXO','IES_PADRE','CÓDIGO DEL DEPARTAMENTO (IES)',
+     'CÓDIGO DEL MUNICIPIO (IES)','SEMESTRE']]=df2[
+    ['INSCRITOS','ID SECTOR','ID CARACTER','CÓDIGO DE LA INSTITUCIÓN',
+     'AÑO','ID SEXO','IES_PADRE','CÓDIGO DEL DEPARTAMENTO (IES)',
+     'CÓDIGO DEL MUNICIPIO (IES)','SEMESTRE']].astype(int)
+df2['CÓDIGO SNIES DEL PROGRAMA']=(pd.to_numeric(df2['CÓDIGO SNIES DEL PROGRAMA'],
+                                               errors='coerce')
+                                  .fillna(df2['CÓDIGO SNIES DEL PROGRAMA']))
+df2['ID NIVEL DE FORMACIÓN']=(pd.to_numeric(df2['ID NIVEL DE FORMACIÓN'],
+                                               errors='coerce')
+                                  .fillna(df2['ID NIVEL DE FORMACIÓN']))
+df2['ID METODOLOGÍA']=(pd.to_numeric(df2['ID METODOLOGÍA'],
+                                               errors='coerce')
+                                  .fillna(df2['ID METODOLOGÍA']))
+df2['ID ÁREA']=(pd.to_numeric(df2['ID ÁREA'],
+                                               errors='coerce')
+                                  .fillna(df2['ID ÁREA']))
+df2['ID NÚCLEO']=(pd.to_numeric(df2['ID NÚCLEO'],
+                                               errors='coerce')
+                                  .fillna(df2['ID NÚCLEO']))
+df2['ID CINE CAMPO AMPLIO']=(pd.to_numeric(df2['ID CINE CAMPO AMPLIO'],
+                                               errors='coerce')
+                                  .fillna(df2['ID CINE CAMPO AMPLIO']))
+df2['ID CINE CAMPO ESPECIFICO']=(pd.to_numeric(df2['ID CINE CAMPO ESPECIFICO'],
+                                               errors='coerce')
+                                  .fillna(df2['ID CINE CAMPO ESPECIFICO']))
+df2['ID CINE CODIGO DETALLADO']=(pd.to_numeric(df2['ID CINE CODIGO DETALLADO'],
+                                               errors='coerce')
+                                  .fillna(df2['ID CINE CODIGO DETALLADO']))
+df2['CÓDIGO DEL DEPARTAMENTO (PROGRAMA)']=(
+    pd.to_numeric(df2['CÓDIGO DEL DEPARTAMENTO (PROGRAMA)'],
+                                               errors='coerce')
+                                  .fillna(df2['CÓDIGO DEL DEPARTAMENTO (PROGRAMA)']))
+df2['CÓDIGO DEL MUNICIPIO (PROGRAMA)']=(
+    pd.to_numeric(df2['CÓDIGO DEL MUNICIPIO (PROGRAMA)'],
+                                               errors='coerce')
+                                  .fillna(df2['CÓDIGO DEL MUNICIPIO (PROGRAMA)']))
+
+
+#Se crean dfs con información basica de cada uno de las columnas (aquellas que tenian
+#muchos valores categoricos), esto con el fin de estandarizar nombres según ID.
+
+df3=pd.concat([df1,df2],ignore_index=True)
+df3=df3.sort_values('AÑO',ascending=False)
+
+inst=(df3[['CÓDIGO DE LA INSTITUCIÓN','INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)']]
+      .drop_duplicates('CÓDIGO DE LA INSTITUCIÓN'))
+dep=(df3[['CÓDIGO DEL DEPARTAMENTO (IES)','DEPARTAMENTO DE DOMICILIO DE LA IES']]
+      .drop_duplicates('CÓDIGO DEL DEPARTAMENTO (IES)'))
+mun=(df3[['CÓDIGO DEL MUNICIPIO (IES)','MUNICIPIO DE DOMICILIO DE LA IES']]
+      .drop_duplicates('CÓDIGO DEL MUNICIPIO (IES)'))
+pro=(df3[['CÓDIGO SNIES DEL PROGRAMA','PROGRAMA ACADÉMICO']]
+      .drop_duplicates('CÓDIGO SNIES DEL PROGRAMA'))
+nfor=(df2[['ID NIVEL DE FORMACIÓN','NIVEL DE FORMACIÓN']]
+      .drop_duplicates('ID NIVEL DE FORMACIÓN'))
+met=(df2[['ID METODOLOGÍA','METODOLOGÍA']]
+      .drop_duplicates('ID METODOLOGÍA'))
+area=(df2[['ID ÁREA','ÁREA DE CONOCIMIENTO']]
+      .drop_duplicates('ID ÁREA'))
+nucleo=(df2[['ID NÚCLEO','NÚCLEO BÁSICO DEL CONOCIMIENTO (NBC)']]
+      .drop_duplicates('ID NÚCLEO'))
+cca=(df2[['ID CINE CAMPO AMPLIO','DESC CINE CAMPO AMPLIO']]
+      .drop_duplicates('ID CINE CAMPO AMPLIO'))
+cce=(df2[['ID CINE CAMPO ESPECIFICO','DESC CINE CAMPO ESPECIFICO']]
+      .drop_duplicates('ID CINE CAMPO ESPECIFICO'))
+ccd=(df2[['ID CINE CODIGO DETALLADO','DESC CINE CODIGO DETALLADO']]
+      .drop_duplicates('ID CINE CODIGO DETALLADO'))
+cdp=(df3[['CÓDIGO DEL DEPARTAMENTO (PROGRAMA)','DEPARTAMENTO DE OFERTA DEL PROGRAMA']]
+      .drop_duplicates('CÓDIGO DEL DEPARTAMENTO (PROGRAMA)'))	
+cmp=(df3[['CÓDIGO DEL MUNICIPIO (PROGRAMA)','MUNICIPIO DE OFERTA DEL PROGRAMA']]
+      .drop_duplicates('CÓDIGO DEL MUNICIPIO (PROGRAMA)'))			
+
+	
+#Se eliminan las columnas categoricas iniciales
+df2.drop(['INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)',
+          'DEPARTAMENTO DE DOMICILIO DE LA IES',
+          'MUNICIPIO DE DOMICILIO DE LA IES','PROGRAMA ACADÉMICO',
+          'NIVEL DE FORMACIÓN','METODOLOGÍA','ÁREA DE CONOCIMIENTO',
+          'NÚCLEO BÁSICO DEL CONOCIMIENTO (NBC)','DESC CINE CAMPO AMPLIO',
+          'DESC CINE CAMPO ESPECIFICO','DESC CINE CODIGO DETALLADO',
+          'DEPARTAMENTO DE OFERTA DEL PROGRAMA','MUNICIPIO DE OFERTA DEL PROGRAMA'],
+         axis=1,inplace=True)
+
+df1.drop(['INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)',
+          'DEPARTAMENTO DE DOMICILIO DE LA IES',
+          'MUNICIPIO DE DOMICILIO DE LA IES','PROGRAMA ACADÉMICO',
+          'NIVEL DE FORMACIÓN','METODOLOGÍA','ÁREA DE CONOCIMIENTO',
+          'NÚCLEO BÁSICO DEL CONOCIMIENTO (NBC)','DESC CINE CAMPO AMPLIO',
+          'DESC CINE CAMPO ESPECIFICO','DESC CINE CODIGO DETALLADO',
+          'DEPARTAMENTO DE OFERTA DEL PROGRAMA','MUNICIPIO DE OFERTA DEL PROGRAMA'],
+         axis=1,inplace=True)
+
+#Se une el df inicial con los columnas categoricas según ID para estandarizar
+df2=pd.merge(df2,inst,'inner',on='CÓDIGO DE LA INSTITUCIÓN')
+df1=pd.merge(df1,inst,'inner',on='CÓDIGO DE LA INSTITUCIÓN')
+df2=pd.merge(df2,dep,'inner',on='CÓDIGO DEL DEPARTAMENTO (IES)')
+df1=pd.merge(df1,dep,'inner',on='CÓDIGO DEL DEPARTAMENTO (IES)')
+df2=pd.merge(df2,mun,'inner',on='CÓDIGO DEL MUNICIPIO (IES)')
+df1=pd.merge(df1,mun,'inner',on='CÓDIGO DEL MUNICIPIO (IES)')
+df2=pd.merge(df2,pro,'inner',on='CÓDIGO SNIES DEL PROGRAMA')
+df1=pd.merge(df1,pro,'inner',on='CÓDIGO SNIES DEL PROGRAMA')
+df2=pd.merge(df2,nfor,'inner',on='ID NIVEL DE FORMACIÓN')
+df2=pd.merge(df2,met,'inner',on='ID METODOLOGÍA')
+df2=pd.merge(df2,area,'inner',on='ID ÁREA')
+df2=pd.merge(df2,nucleo,'inner',on='ID NÚCLEO')
+df2=pd.merge(df2,cca,'inner',on='ID CINE CAMPO AMPLIO')
+df2=pd.merge(df2,cce,'inner',on='ID CINE CAMPO ESPECIFICO')
+df2=pd.merge(df2,ccd,'inner',on='ID CINE CODIGO DETALLADO')
+df2=pd.merge(df2,cdp,'inner',on='CÓDIGO DEL DEPARTAMENTO (PROGRAMA)')
+df1=pd.merge(df1,cdp,'inner',on='CÓDIGO DEL DEPARTAMENTO (PROGRAMA)')
+df2=pd.merge(df2,cmp,'inner',on='CÓDIGO DEL MUNICIPIO (PROGRAMA)')
+df1=pd.merge(df1,cmp,'inner',on='CÓDIGO DEL MUNICIPIO (PROGRAMA)')
+
+df=(pd.concat([df1,df2],ignore_index=True).fillna(''))
