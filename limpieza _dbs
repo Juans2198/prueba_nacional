@@ -109,11 +109,12 @@ for i in range(2000,2014):
     dfs.append(dff)
    
 #Se concatenan los dfs de cada año del 2000 al 2013 en un solo df "dff"
-#asimismo, ordenas de forma descendente el df, nos aseguramos que todos los
-#núemros sean int reemplazando los valores de cada numero en str para int,
+#asimismo, se ordena de forma descendente el df, nos aseguramos que todos las
+#columnas numericas tengan efectivamente valores numericos,
 #filtramos el df para eliminar todos los valores cuyos isncritos sean 0, 
 #para reducir el tamaño del df y eliminar información que solo genera ruido,
-#convertimos todos los valores a 
+#convertimos todo a mayuscula, se eliminan posibles espacios al incio 
+#y final de cada string, quitamos las tildes, ordenamos en orden descendente.
 
 dff=pd.concat(dfs)
 df1=dff.sort_values('AÑO',ascending=False)
@@ -138,6 +139,8 @@ Cargando la informacion del 2014 al 2021
 l=[]
 
 #Se recorren los multiples archivos y se guardan en dfs y se almacenan en la lista "l"
+#se tiene consistencia en los nombres de las columnas, se aplican condicionales según
+#similitud de los formatos de los archivos de excel de origen.
 for i in range(2014,2022):
     if (i>=2014 and i<=2018):
         if i==2018:
@@ -190,13 +193,18 @@ for i in range(2014,2022):
     #Se agregan los distintos dfs a la lista "l" 
     l.append(df2)
 
-#Se crea el df completo con la información de los múltiples años y se ordena
-#de forma descendente por año.    
-
+#Se ordena de forma descendente el df, nos aseguramos que todos las
+#columnas numericas tengan efectivamente valores numericos (se conservan los valores
+# de algunos categoricos en columnas numericas),convertimos todo a mayuscula, 
+#se eliminan posibles espacios al incio y final de cada string, quitamos las tildes,
+# ordenamos en orden descendente y se estandarizan los valores de sexo.
+    
 
 df2=pd.concat(l,ignore_index=True)
 df2=df2.apply(lambda x: x.astype(str).str.upper().str.strip())
 df2=df2.sort_values('AÑO',ascending=False)
+df2['SEXO'] =np.where(((df2['SEXO']=='MASCULINO')|(df2['SEXO']=='HOMBRE'))
+                      ,'HOMBRE','MUJER')
 df2=df2.replace(regex=['Á','É','Í','Ó','Ú'],
                 value=['A','E','I','O','U'])
 df2[['INSCRITOS','ID SECTOR','ID CARACTER','CÓDIGO DE LA INSTITUCIÓN'
@@ -239,8 +247,10 @@ df2['CÓDIGO DEL MUNICIPIO (PROGRAMA)']=(
                                   .fillna(df2['CÓDIGO DEL MUNICIPIO (PROGRAMA)']))
 
 
-#Se crean dfs con información basica de cada uno de las columnas (aquellas que tenian
-#muchos valores categoricos), esto con el fin de estandarizar nombres según ID.
+#Se crea un df "df3" con los valores del "df1" (informacion de 2000-2013),
+#y valores de "df2" (informacion de 2014-2021) para poder crear "bases de datos"
+#con valores unicos de ID y valores categoricos, con el fin de estandarizar el df 
+#final
 
 df3=pd.concat([df1,df2],ignore_index=True)
 df3=df3.sort_values('AÑO',ascending=False)
@@ -273,7 +283,8 @@ cmp=(df3[['CÓDIGO DEL MUNICIPIO (PROGRAMA)','MUNICIPIO DE OFERTA DEL PROGRAMA']
       .drop_duplicates('CÓDIGO DEL MUNICIPIO (PROGRAMA)'))			
 
 	
-#Se eliminan las columnas categoricas iniciales
+#Se eliminan las columnas categoricas iniciales para que solo queden los valores
+#unicos de cuando se haga el merge de lo df1 y df2
 df2.drop(['INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)',
           'DEPARTAMENTO DE DOMICILIO DE LA IES',
           'MUNICIPIO DE DOMICILIO DE LA IES','PROGRAMA ACADÉMICO',
@@ -292,7 +303,9 @@ df1.drop(['INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)',
           'DEPARTAMENTO DE OFERTA DEL PROGRAMA','MUNICIPIO DE OFERTA DEL PROGRAMA'],
          axis=1,inplace=True)
 
-#Se une el df inicial con los columnas categoricas según ID para estandarizar
+#Se unen los dfs iniciales (df1 y df2) con las "bases de datos" 
+#según ID y así se garantiza una correcta estandarización de los datos para ambos
+#dfs.
 df2=pd.merge(df2,inst,'inner',on='CÓDIGO DE LA INSTITUCIÓN')
 df1=pd.merge(df1,inst,'inner',on='CÓDIGO DE LA INSTITUCIÓN')
 df2=pd.merge(df2,dep,'inner',on='CÓDIGO DEL DEPARTAMENTO (IES)')
@@ -313,4 +326,7 @@ df1=pd.merge(df1,cdp,'inner',on='CÓDIGO DEL DEPARTAMENTO (PROGRAMA)')
 df2=pd.merge(df2,cmp,'inner',on='CÓDIGO DEL MUNICIPIO (PROGRAMA)')
 df1=pd.merge(df1,cmp,'inner',on='CÓDIGO DEL MUNICIPIO (PROGRAMA)')
 
+#Finalmente se concatenan los dos dfs "df1" y "df2" y se genera el df final "df"
+#se convierte a .csv y esa será nuestra base de datos final.
 df=(pd.concat([df1,df2],ignore_index=True).fillna(''))
+df.to_csv('df.csv',index=False,encoding='latin1')
