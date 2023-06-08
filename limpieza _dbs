@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jun  6 02:39:26 2023
+
+@author: Asus
+"""
+
 import numpy as np
 import pandas as pd
 import re
@@ -122,10 +129,20 @@ df1=df1[df1['INSCRITOS']!=0]
 df1=df1.apply(lambda x: x.astype(str).str.upper().str.strip())
 df1[['INSCRITOS','CÓDIGO DE LA INSTITUCIÓN','AÑO','ID SEXO','IES_PADRE',
      'CÓDIGO DEL DEPARTAMENTO (IES)','CÓDIGO DEL MUNICIPIO (IES)',
-     'CÓDIGO SNIES DEL PROGRAMA','SEMESTRE']]=df1[
+     'CÓDIGO SNIES DEL PROGRAMA','SEMESTRE',
+     'CÓDIGO DEL DEPARTAMENTO (PROGRAMA)']]=df1[
     ['INSCRITOS','CÓDIGO DE LA INSTITUCIÓN','AÑO','ID SEXO','IES_PADRE',
      'CÓDIGO DEL DEPARTAMENTO (IES)','CÓDIGO DEL MUNICIPIO (IES)',
-     'CÓDIGO SNIES DEL PROGRAMA','SEMESTRE']].astype(int)
+     'CÓDIGO SNIES DEL PROGRAMA','SEMESTRE',
+     'CÓDIGO DEL DEPARTAMENTO (PROGRAMA)']].astype(int)
+df1['CÓDIGO DEL DEPARTAMENTO (PROGRAMA)']=(
+    pd.to_numeric(df1['CÓDIGO DEL DEPARTAMENTO (PROGRAMA)'],
+                                               errors='coerce')
+                                  .fillna(df1['CÓDIGO DEL DEPARTAMENTO (PROGRAMA)']))
+df1['CÓDIGO DEL MUNICIPIO (PROGRAMA)']=(
+    pd.to_numeric(df1['CÓDIGO DEL MUNICIPIO (PROGRAMA)'],
+                                               errors='coerce')
+                                  .fillna(df1['CÓDIGO DEL MUNICIPIO (PROGRAMA)']))
 df1=df1.replace(regex=['Á','É','Í','Ó','Ú'],
                 value=['A','E','I','O','U'])
 df1=df1.sort_values('AÑO',ascending=False)
