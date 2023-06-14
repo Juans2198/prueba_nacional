@@ -214,20 +214,25 @@ df2=df2.apply(lambda x: x.astype(str).str.upper().str.strip())
 df2=df2.sort_values('AÑO',ascending=False)
 df2['SEXO'] =np.where(((df2['SEXO']=='MASCULINO')|(df2['SEXO']=='HOMBRE'))
                       ,'HOMBRE','MUJER')
-df2=df2.replace(regex=['Á','É','Í','Ó','Ú','I¿N','E¿O','F¿SICA','ENSE¿ANZA','G¿A','PR¿CTICA','ART¿STICOS','INGENIER¿A',
-'ELECTR¿NICA','M¿TODOS','B¿SICA','LING¿¿STICA','ESPA¿OL','T¿C',
-'M¿DIC','MEC¿NICA','MAESTR¿A','AN¿LISIS','FILOSOF¿A','L¿GICA','M¿S',
-'TUR¿STICOS','CRIMINAL¿STICA','TR¿PICO','ESTAD¿STICA','QUIR¿RGICA','LOG¿STICA',
-'NI¿EZ','SOCIAL ¿ PERIODISMO','TEOR¿A','¿NFASIS','ECON¿MICO','LING¿ISTICA',
-'BILING¿E','MAESTRIA EN ADMINISTRACION ¿ MBA ¿','INGL¿S','FRANC¿S','P¿BLICA',
-'TUR¿STICA','POL¿TICO'],
-                value=['A','E','I','O','U','ION','EÑO','FISICA','ENSEÑANZA','GIA','PRACTICA',
+df2=df2.replace(regex=['Á','É','Í','Ó','Ú'],
+                value=['A','E','I','O','U'])
+
+df2['PROGRAMA ACADÉMICO']=df2['PROGRAMA ACADÉMICO'].replace(regex=['I¿N',
+  'E¿O','F¿SICA','ENSE¿ANZA','G¿A',
+ 'PR¿CTICA','ART¿STICOS','INGENIER¿A','ELECTR¿NICA','M¿TODOS','B¿SICA',
+ 'LING¿¿STICA','ESPA¿OL','T¿C','M¿DIC','MEC¿NICA','MAESTR¿A','AN¿LISIS',
+ 'FILOSOF¿A','L¿GICA','M¿S','TUR¿STICOS','CRIMINAL¿STICA','TR¿PICO','ESTAD¿STICA',
+ 'QUIR¿RGICA','LOG¿STICA','NI¿EZ','SOCIAL ¿ PERIODISMO','TEOR¿A','¿NFASIS',
+ 'ECON¿MICO','LING¿ISTICA','BILING¿E','MAESTRIA EN ADMINISTRACION ¿ MBA ¿',
+ 'INGL¿S','FRANC¿S','P¿BLICA','TUR¿STICA','POL¿TICO'],
+   value=['ION','EÑO','FISICA','ENSEÑANZA','GIA','PRACTICA',
 'ARTISTICOS','INGENIERIA','ELECTRONICA','METODOS','BASICA','LINGUISTICA',
 'ESPAÑOL','TEC','MEDIC','MECANICA','MAESTRIA','ANALISIS','FILOSOFIA','LOGICA','MAS',
 'TURISTICOS','CRIMINALISTICA','TROPICO','ESTADISTICA','QUIRURGICA','LOGISTICA',
 'NIÑEZ','SOCIAL Y PERIODISMO','TEORIA','ENFASIS','ECONOMICO','LINGUISTICA',
 'BILINGUE','MAESTRIA EN ADMINISTRACION - MBA','INGLES','FRANCES','PUBLICA',
 'TURISTICA','POLITICO'])
+
 df2[['INSCRITOS','ID SECTOR','ID CARACTER','CÓDIGO DE LA INSTITUCIÓN'
      ,'AÑO','ID SEXO','IES_PADRE','CÓDIGO DEL DEPARTAMENTO (IES)',
      'CÓDIGO DEL MUNICIPIO (IES)','SEMESTRE']]=df2[
@@ -346,8 +351,9 @@ df2=pd.merge(df2,cmp,'inner',on='CÓDIGO DEL MUNICIPIO (PROGRAMA)')
 df1=pd.merge(df1,cmp,'inner',on='CÓDIGO DEL MUNICIPIO (PROGRAMA)')
 
 #Finalmente se concatenan los dos dfs "df1" y "df2" y se genera el df final "df"
-#,se filtran solos las columnas que queremos usary se convierte a .csv y esa 
-#será nuestra base de datos final.
+#,se filtran solos las columnas que queremos usar, se unifican algunos valores
+# y se convierte a .csv y esa será nuestra base de datos final.
+
 df=(pd.concat([df1,df2],ignore_index=True).fillna(''))
 df=df[['INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)','PRINCIPAL O SECCIONAL',
        'SECTOR IES','CARACTER IES','DEPARTAMENTO DE DOMICILIO DE LA IES',
@@ -356,4 +362,8 @@ df=df[['INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)','PRINCIPAL O SECCIONAL',
        'NÚCLEO BÁSICO DEL CONOCIMIENTO (NBC)','DESC CINE CAMPO ESPECIFICO',
        'DESC CINE CAMPO AMPLIO','DESC CINE CODIGO DETALLADO','DEPARTAMENTO DE OFERTA DEL PROGRAMA',
        'MUNICIPIO DE OFERTA DEL PROGRAMA','SEXO','AÑO','SEMESTRE','INSCRITOS']]
+df['NIVEL DE FORMACIÓN']=df['NIVEL DE FORMACIÓN'].replace(regex=['UNIVERSITARIO',
+    'TECNOLOGICO'],value=['UNIVERSITARIA','TECNOLOGICA'])
 df.to_csv('df.csv',index=False,encoding='latin1')
+
+
