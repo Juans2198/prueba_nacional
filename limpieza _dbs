@@ -205,7 +205,8 @@ for i in range(2014,2022):
 #columnas numericas tengan efectivamente valores numericos (se conservan los valores
 # de algunos categoricos en columnas numericas),convertimos todo a mayuscula, 
 #se eliminan posibles espacios al incio y final de cada string, quitamos las tildes,
-# ordenamos en orden descendente y se estandarizan los valores de sexo.
+#  y se eliminan las "¿" de las distintas palabras que contienen este caracter
+#ordenamos en orden descendente y se estandarizan los valores de sexo.
     
 
 df2=pd.concat(l,ignore_index=True)
@@ -213,8 +214,20 @@ df2=df2.apply(lambda x: x.astype(str).str.upper().str.strip())
 df2=df2.sort_values('AÑO',ascending=False)
 df2['SEXO'] =np.where(((df2['SEXO']=='MASCULINO')|(df2['SEXO']=='HOMBRE'))
                       ,'HOMBRE','MUJER')
-df2=df2.replace(regex=['Á','É','Í','Ó','Ú'],
-                value=['A','E','I','O','U'])
+df2=df2.replace(regex=['Á','É','Í','Ó','Ú','I¿N','E¿O','F¿SICA','ENSE¿ANZA','G¿A','PR¿CTICA','ART¿STICOS','INGENIER¿A',
+'ELECTR¿NICA','M¿TODOS','B¿SICA','LING¿¿STICA','ESPA¿OL','T¿C',
+'M¿DIC','MEC¿NICA','MAESTR¿A','AN¿LISIS','FILOSOF¿A','L¿GICA','M¿S',
+'TUR¿STICOS','CRIMINAL¿STICA','TR¿PICO','ESTAD¿STICA','QUIR¿RGICA','LOG¿STICA',
+'NI¿EZ','SOCIAL ¿ PERIODISMO','TEOR¿A','¿NFASIS','ECON¿MICO','LING¿ISTICA',
+'BILING¿E','MAESTRIA EN ADMINISTRACION ¿ MBA ¿','INGL¿S','FRANC¿S','P¿BLICA',
+'TUR¿STICA','POL¿TICO'],
+                value=['A','E','I','O','U','ION','EÑO','FISICA','ENSEÑANZA','GIA','PRACTICA',
+'ARTISTICOS','INGENIERIA','ELECTRONICA','METODOS','BASICA','LINGUISTICA',
+'ESPAÑOL','TEC','MEDIC','MECANICA','MAESTRIA','ANALISIS','FILOSOFIA','LOGICA','MAS',
+'TURISTICOS','CRIMINALISTICA','TROPICO','ESTADISTICA','QUIRURGICA','LOGISTICA',
+'NIÑEZ','SOCIAL Y PERIODISMO','TEORIA','ENFASIS','ECONOMICO','LINGUISTICA',
+'BILINGUE','MAESTRIA EN ADMINISTRACION - MBA','INGLES','FRANCES','PUBLICA',
+'TURISTICA','POLITICO'])
 df2[['INSCRITOS','ID SECTOR','ID CARACTER','CÓDIGO DE LA INSTITUCIÓN'
      ,'AÑO','ID SEXO','IES_PADRE','CÓDIGO DEL DEPARTAMENTO (IES)',
      'CÓDIGO DEL MUNICIPIO (IES)','SEMESTRE']]=df2[
@@ -253,6 +266,7 @@ df2['CÓDIGO DEL MUNICIPIO (PROGRAMA)']=(
     pd.to_numeric(df2['CÓDIGO DEL MUNICIPIO (PROGRAMA)'],
                                                errors='coerce')
                                   .fillna(df2['CÓDIGO DEL MUNICIPIO (PROGRAMA)']))
+
 
 
 #Se crea un df "df3" con los valores del "df1" (informacion de 2000-2013),
